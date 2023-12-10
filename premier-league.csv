@@ -1,0 +1,10 @@
+MatchID,BF Event ID,Country,League,Date,Home,Away,Home Selection ID,Away Selection ID,Criteria1Val,Criteria1Diff,Criteria1Rat,Criteria2Val,Criteria2Diff,Criteria2Rat,Criteria3Val,Criteria3Diff,Criteria3Rat,Criteria4Val,Criteria4Diff,Criteria4Rat,Criteria5Val,Criteria5Diff,Criteria5Rat,Criteria6Val,Criteria6Diff,Criteria6Rat,Criteria7Val,Criteria7Diff,Criteria7Rat
+814381,32832333,England,Premier League,07/12/2023 19:30:00,Everton,Newcastle Utd,56343,25422,0.71,0.71,0,2.17,2.17,0,3.2,3.2,0,3.55,3.55,0,2.46,2.46,0,1.29,1.29,0,1.67,1.67,0
+814382,32832355,England,Premier League,07/12/2023 20:15:00,Tottenham,West Ham,48224,48756,1.67,1.67,0,1.71,1.71,0,1.79,1.79,0,4.4,4.4,0,4.7,4.7,0,1.33,1.33,0,2,2,0
+814383,0,England,Premier League,09/12/2023 12:30:00,Crystal Palace,Liverpool,0,0,0.86,0.86,0,1.63,1.63,0,0,0,0,0,0,0,0,0,0,1.43,1.43,0,1.13,1.13,0
+814387,0,England,Premier League,09/12/2023 15:00:00,Wolves,Nottingham,0,0,1.43,1.43,0,0.75,0.75,0,0,0,0,0,0,0,0,0,0,1.71,1.71,0,2.25,2.25,0
+814384,0,England,Premier League,09/12/2023 15:00:00,Brighton,Burnley,0,0,2.13,2.13,0,0.71,0.71,0,0,0,0,0,0,0,0,0,0,1.38,1.38,0,1.86,1.86,0
+814386,0,England,Premier League,09/12/2023 15:00:00,Sheffield Utd,Brentford,0,0,0.88,0.88,0,1.14,1.14,0,0,0,0,0,0,0,0,0,0,2.63,2.63,0,1.29,1.29,0
+814385,0,England,Premier League,09/12/2023 15:00:00,Manchester United,Bournemouth,0,0,1.25,1.25,0,1.43,1.43,0,0,0,0,0,0,0,0,0,0,1.38,1.38,0,2.57,2.57,0
+814388,0,England,Premier League,09/12/2023 17:30:00,Aston Villa,Arsenal,0,0,3.43,3.43,0,1.86,1.86,0,0,0,0,0,0,0,0,0,0,0.71,0.71,0,0.86,0.86,0
+814389,0,England,Premier League,10/12/2023 14:00:00,Luton,Manchester City,0,0,1.29,1.29,0,2,2,0,0,0,0,0,0,0,0,0,0,1.71,1.71,0,1.25,1.25,0
