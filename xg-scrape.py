@@ -182,8 +182,9 @@ def calculate_outcomes(avg_home_goals, avg_away_goals):
     # Separating the odds calculation for simple outcomes and over/under goals
     odds = {key: 1 / outcomes[key] if outcomes[key] > 0 else None for key in ['home_win', 'away_win', 'draw']}
     for i in range(7):
-        odds[f'over_{i}.5'] = 1 / outcomes['over_goals'][i] if outcomes['over_goals'][i] > 0 else None
         odds[f'under_{i}.5'] = 1 / outcomes['under_goals'][i] if outcomes['under_goals'][i] > 0 else None
+        odds[f'over_{i}.5'] = 1 / (1 - outcomes['under_goals'][i]) if outcomes['under_goals'][i] > 0 else None
+        
 
     return odds
 
@@ -191,7 +192,7 @@ def calculate_outcomes(avg_home_goals, avg_away_goals):
 def get_team_data(team_id):
     team = team_collection.find_one({'id': team_id})
     if team:
-        return team['overall_record']  # Or use 'home_record'/'away_record' if relevant
+        return team
     return None
 
 # Function to calculate average goals in each league
@@ -232,6 +233,41 @@ time.sleep(5)  # Make sure only runs 10 seconds after the last scrape
 # Calculate league averages
 league_averages = calculate_league_averages()
 
+# Function to calculate expected goals and odds
+def calculate_expected_goals_and_odds(home_team_data, away_team_data, league_averages, league, model_type):
+    avg_goals_league = league_averages[league]['avg_goals']
+    avg_home_goals_league = league_averages[league]['avg_home_goals']
+    avg_away_goals_league = league_averages[league]['avg_away_goals']
+
+    if model_type == "actual_overall":
+        home_attack_strength = home_team_data['overall_record']['avG'] / avg_goals_league
+        away_defence_strength = away_team_data['overall_record']['avG_conceded'] / avg_goals_league
+        away_attack_strength = away_team_data['overall_record']['avG'] / avg_goals_league
+        home_defence_strength = home_team_data['overall_record']['avG_conceded'] / avg_goals_league
+    elif model_type == "actual_home_away":
+        home_attack_strength = home_team_data['home_record']['avG'] / avg_home_goals_league
+        away_defence_strength = away_team_data['away_record']['avG_conceded'] / avg_away_goals_league
+        away_attack_strength = away_team_data['away_record']['avG'] / avg_away_goals_league
+        home_defence_strength = home_team_data['home_record']['avG_conceded'] / avg_home_goals_league
+    elif model_type == "xg_home_away":
+        home_attack_strength = home_team_data['home_record']['avxG'] / avg_home_goals_league
+        away_defence_strength = away_team_data['away_record']['avxG_conceded'] / avg_away_goals_league
+        away_attack_strength = away_team_data['away_record']['avxG'] / avg_away_goals_league
+        home_defence_strength = home_team_data['home_record']['avxG_conceded'] / avg_home_goals_league
+    else:  # xg_overall or other models
+        home_attack_strength = home_team_data['overall_record']['avxG'] / avg_goals_league
+        away_defence_strength = away_team_data['overall_record']['avxG_conceded'] / avg_goals_league
+        away_attack_strength = away_team_data['overall_record']['avxG'] / avg_goals_league
+        home_defence_strength = home_team_data['overall_record']['avxG_conceded'] / avg_goals_league
+
+    # Calculate expected goals
+    xGHome = home_attack_strength * away_defence_strength * avg_home_goals_league
+    xGAway = away_attack_strength * home_defence_strength * avg_away_goals_league
+
+    # Calculate odds
+    odds = calculate_outcomes(xGHome, xGAway)
+    return odds, xGHome, xGAway
+
 # Process each match to calculate odds
 for match in match_collection.find():
     league = match.get('league')
@@ -245,62 +281,27 @@ for match in match_collection.find():
     away_team_data = get_team_data(away_team_id)
 
     if home_team_data and away_team_data:
-        avg_goals_league = league_averages[league]['avg_goals']
-        avg_home_goals_league = league_averages[league]['avg_home_goals']
-        avg_away_goals_league = league_averages[league]['avg_away_goals']
+        # Calculate odds for each model
+        odds_xG_overall, xGHome_overall, xGAway_overall = calculate_expected_goals_and_odds(home_team_data, away_team_data, league_averages, league, "xg_overall")
+        odds_actual_overall, _, _ = calculate_expected_goals_and_odds(home_team_data, away_team_data, league_averages, league, "actual_overall")
+        odds_actual_home_away, _, _ = calculate_expected_goals_and_odds(home_team_data, away_team_data, league_averages, league, "actual_home_away")
+        odds_xg_home_away, _, _ = calculate_expected_goals_and_odds(home_team_data, away_team_data, league_averages, league, "xg_home_away")
 
-        # Calculate attack and defence strengths
-        home_attack_strength = home_team_data['avxG'] / avg_goals_league
-        away_defence_strength = away_team_data['avxG_conceded'] / avg_goals_league
-        away_attack_strength = away_team_data['avxG'] / avg_goals_league
-        home_defence_strength = home_team_data['avxG_conceded'] / avg_goals_league
-
-        # Calculate expected goals
-        xGHome = home_attack_strength * away_defence_strength * avg_home_goals_league
-        xGAway = away_attack_strength * home_defence_strength * avg_away_goals_league
-
-        # Calculate odds
-        odds_xG = calculate_outcomes(xGHome, xGAway)
-
-        # Update match document with calculated odds and intermediary variables
+        # Update match document with calculated odds for each model
         match_collection.update_one(
             {'_id': match['_id']},
             {'$set': {
-                'odds_xG': odds_xG,
-                'odds_xG_intermediaries': {
-                    'total_matches': league_averages[league]['total_matches'],
-                    'total_goals': league_averages[league]['total_goals'],
-                    'total_home_goals': league_averages[league]['total_home_goals'],
-                    'total_away_goals': league_averages[league]['total_away_goals'],
-                    'avg_goals_league': avg_goals_league,
-                    'avg_home_goals_league': avg_home_goals_league,
-                    'avg_away_goals_league': avg_away_goals_league,
-
-                    'home_xg': home_team_data['xG'],
-                    'home_av_xg': home_team_data['avxG'],
-                    'home_xg_conceded': home_team_data['xG_conceded'],
-                    'home_av_xg_conceded': home_team_data['avxG_conceded'],
-                    'home_goals': home_team_data['scored'],
-                    'home_conceded': home_team_data['missed'],
-                    'home_attack_strength': home_attack_strength,
-                    'home_defence_strength': home_defence_strength,
-
-                    'away_xg': away_team_data['xG'],
-                    'away_av_xg': away_team_data['avxG'],
-                    'away_xg_conceded': away_team_data['xG_conceded'],
-                    'away_av_xg_conceded': away_team_data['avxG_conceded'],
-                    'away_goals': away_team_data['scored'],
-                    'away_conceded': away_team_data['missed'],
-                    'away_attack_strength': away_attack_strength,
-                    'away_defence_strength': away_defence_strength,
-                    
-                    'xGHome': xGHome,
-                    'xGAway': xGAway
-                }
+                'odds_xG_overall': odds_xG_overall,
+                'odds_actual_overall': odds_actual_overall,
+                'odds_actual_home_away': odds_actual_home_away,
+                'odds_xg_home_away': odds_xg_home_away,
+                'league_averages': league_averages[league],
+                'home': home_team_data,
+                'away': away_team_data,
             }}
         )
 
-print("Match odds and intermediary variables updated.")
+print("Match odds for all models updated.")
 
 exampleTeamData = {
   "_id": {
